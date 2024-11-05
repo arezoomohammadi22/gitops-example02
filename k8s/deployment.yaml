@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: node-app
-          image: registry.sananetco.com:8443/gitops-example03-src-codes:76f80130
+          image: registry.sananetco.com:8443/gitops-example02-src-codes:76f80130
           ports:
             - containerPort: 3000
       imagePullSecrets:
