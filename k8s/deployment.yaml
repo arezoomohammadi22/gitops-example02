@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-app
+  template:
+    metadata:
+      labels:
+        app: node-app
+    spec:
+      containers:
+        - name: node-app
+          image: registry.sananetco.com:8443/gitops-example03-src-codes:76f80130
+          ports:
+            - containerPort: 3000
+      imagePullSecrets:
+        - name: myregistry
