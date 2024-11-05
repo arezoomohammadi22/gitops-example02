@@ -1,0 +1,43 @@
+stages:
+  - build
+  - deploy
+
+before_script:
+  - docker login registry.sananetco.com:8443 -u admin -p 123@qwe
+
+variables:
+  IMAGE: "registry.sananetco.com:8443/$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA"
+
+build:
+  stage: build
+  script:
+    - |
+      docker build -t $IMAGE .
+      docker push $IMAGE
+  only:
+    - main
+  tags:
+    - dind
+
+deploy:
+  stage: deploy
+  script:
+    - |
+      # Configure Git to use the PAT
+      git config --global credential.helper store
+      echo "https://gitlab-ci-token:$CI_GITLAB_TOKEN@gitlab.sananetco.com" > ~/.git-credentials
+      # Clone the repository using the configured credentials
+      git clone https://gitlab.sananetco.com/devops-scenarios/gitops-example03-manifests.git
+      cd gitops-example03-manifests
+      git checkout main
+      git config --global user.email "ci@mycompany.com"
+      git config --global user.name "CI Bot"
+      git pull origin main
+      sed -i "s|image:.*|image: $IMAGE|" k8s/deployment.yaml
+      git add k8s/deployment.yaml
+      git commit -m "Deploy $CI_COMMIT_SHORT_SHA"
+      git push origin main
+  only:
+    - main
+  tags:
+    - dind
