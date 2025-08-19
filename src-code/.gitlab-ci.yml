@@ -1,7 +1,10 @@
 stages:
   - build
   - deploy
-  
+
+variables:
+  IMAGE: "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA"
+
 .default_docker:
   image: docker:24.0.7
   before_script:
@@ -11,31 +14,41 @@ build:
   stage: build
   extends: .default_docker
   script:
-    - docker build -t "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA" .
-    - docker push "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA"
+    - docker build -t "$IMAGE" .
+    - docker push "$IMAGE"
   only:
     - main
-
+  tags:
+    - docker-dood-behsa
 
 deploy:
   stage: deploy
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache git bash curl sed
   script:
     - |
-      # Configure Git to use the PAT
-      git config --global credential.helper store
-      echo "https://gitlab-ci-token:$CI_GITLAB_TOKEN@gitlab.sananetco.com" > ~/.git-credentials
-      # Clone the repository using the configured credentials
-      git clone https://gitlab.sananetco.com/devops-scenarios/gitops-example03-manifests.git
-      cd gitops-example03-manifests
-      git checkout main
+      export IMAGE="$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA"
+
+      # Set Git identity
       git config --global user.email "ci@mycompany.com"
       git config --global user.name "CI Bot"
+
+      # Clone the GitOps manifests repo
+      git clone "https://root:${CI_PASSWORD}@gitlab.sananetco.com/testing/test02-manifests.git"
+      cd test02-manifests
+      git checkout main
       git pull origin main
-      sed -i "s|image:.*|image: $IMAGE|" k8s/deployment.yaml
-      git add k8s/deployment.yaml
-      git commit -m "Deploy $CI_COMMIT_SHORT_SHA"
+
+      # Replace image line
+      echo "Replacing image line with: image: $IMAGE"
+      sed -i "s|image:.*|image: \"$IMAGE\"|" manifests/deployment.yaml
+
+      # Commit & push changes
+      git add manifests/deployment.yaml
+      git commit -m "Deploy $CI_COMMIT_SHORT_SHA [skip ci]" || echo "No changes to commit"
       git push origin main
   only:
     - main
   tags:
-    - dind
+    - docker-dood-behsa
