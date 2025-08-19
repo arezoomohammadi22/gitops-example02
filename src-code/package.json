@@ -1,0 +1,12 @@
+{
+  "name": "gitlab-argocd-example",
+  "version": "1.0.0",
+  "description": "A simple Node.js HTTP server for GitLab CI/CD and ArgoCD demo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {}
+}
