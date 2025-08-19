@@ -1,23 +1,21 @@
 stages:
   - build
   - deploy
-
-before_script:
-  - docker login registry.sananetco.com:8443 -u admin -p 123@qwe
-
-variables:
-  IMAGE: "registry.sananetco.com:8443/$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA"
+  
+.default_docker:
+  image: docker:24.0.7
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
 
 build:
   stage: build
+  extends: .default_docker
   script:
-    - |
-      docker build -t $IMAGE .
-      docker push $IMAGE
+    - docker build -t "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA"
   only:
     - main
-  tags:
-    - dind
+
 
 deploy:
   stage: deploy
