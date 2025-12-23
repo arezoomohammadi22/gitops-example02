@@ -10,16 +10,25 @@ variables:
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
 
-build:
+build-stage:
   stage: build
+  tags:
+    - k8s
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
   extends: .default_docker
   script:
     - docker build -t "$IMAGE" .
     - docker push "$IMAGE"
   only:
     - main
-  tags:
-    - docker-dood-behsa
+
 
 deploy:
   stage: deploy
@@ -35,8 +44,8 @@ deploy:
       git config --global user.name "CI Bot"
 
       # Clone the GitOps manifests repo
-      git clone "https://root:${CI_PASSWORD}@gitlab.sananetco.com/testing/test02-manifests.git"
-      cd test02-manifests
+      git clone "https://root:${CI_PASSWORD}@gitlab.sananetco.com/root/manifest01.git"
+      cd manifest01
       git checkout main
       git pull origin main
 
@@ -51,4 +60,4 @@ deploy:
   only:
     - main
   tags:
-    - docker-dood-behsa
+    - k8s
